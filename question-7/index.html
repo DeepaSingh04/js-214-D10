@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Pagination</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>User Data</h1>
+    <div id="user-list" class="user-list"></div>
+    <div id="pagination" class="pagination"></div>
+  </div>
+
+  <script>
+    const apiUrl = "https://jsonplaceholder.typicode.com/users";
+    const limit = 6;
+    let currentPage = 1;
+
+    // Fetch user data from the API
+    async function fetchUserData(page) {
+      try {
+        const response = await fetch(`${apiUrl}?_page=${page}&_limit=${limit}`);
+        if (!response.ok) throw new Error("Failed to fetch data");
+        const users = await response.json();
+        displayUsers(users);
+        generatePaginationButtons();
+      } catch (error) {
+        document.getElementById("user-list").innerHTML = `<p class="error">${error.message}</p>`;
+      }
+    }
+
+    // Display users on the webpage
+    function displayUsers(users) {
+      const userList = document.getElementById("user-list");
+      userList.innerHTML = users
+        .map(user => `
+          <div class="user-card">
+            <h3>${user.name}</h3>
+            <p><strong>Email:</strong> ${user.email}</p>
+            <p><strong>Phone:</strong> ${user.phone}</p>
+            <p><strong>Website:</strong> <a href="http://${user.website}" target="_blank">${user.website}</a></p>
+          </div>
+        `).join('');
+    }
+
+    // Generate pagination buttons
+    function generatePaginationButtons() {
+      const totalPages = 2; // Since there are only 10 users in the API, and limit is 6.
+      const pagination = document.getElementById("pagination");
+      pagination.innerHTML = "";
+
+      for (let i = 1; i <= totalPages; i++) {
+        const button = document.createElement("button");
+        button.innerText = i;
+        button.classList.add("pagination-button");
+        if (i === currentPage) button.classList.add("active");
+
+        button.addEventListener("click", () => {
+          currentPage = i;
+          fetchUserData(currentPage);
+        });
+
+        pagination.appendChild(button);
+      }
+    }
+
+    // Load initial page (Page 1)
+    fetchUserData(currentPage);
+  </script>
+</body>
+</html>

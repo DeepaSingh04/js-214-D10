@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Management System</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f4f7;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      background-color: #fff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    h1 {
+      text-align: center;
+      padding: 20px;
+      background-color: #007bff;
+      color: #fff;
+      font-size: 24px;
+      margin: 0;
+    }
+
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 20px;
+      background-color: #f9fafb;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    form input,
+    form select,
+    form button {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      width: calc(33% - 20px);
+      font-size: 14px;
+    }
+
+    form button {
+      width: auto;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    form button:hover {
+      background-color: #0056b3;
+    }
+
+    .filter-container {
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      background-color: #f0f4f7;
+    }
+
+    .filter-container label {
+      font-weight: bold;
+      margin-right: 10px;
+    }
+
+    .task-list {
+      padding: 20px;
+    }
+
+    .task-item {
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      border-left: 8px solid;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      background-color: #fff;
+      transition: box-shadow 0.3s;
+    }
+
+    .task-item:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .task-item.high {
+      border-color: #ff4d4d;
+    }
+
+    .task-item.medium {
+      border-color: #ffcc00;
+    }
+
+    .task-item.low {
+      border-color: #33cc33;
+    }
+
+    .task-item h3 {
+      font-size: 18px;
+      margin: 0 0 10px 0;
+    }
+
+    .task-item p {
+      margin: 5px 0;
+      color: #555;
+    }
+
+    .task-item button {
+      background-color: #dc3545;
+      color: white;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s;
+    }
+
+    .task-item button:hover {
+      background-color: #c82333;
+    }
+
+    #pagination {
+      padding: 20px;
+      text-align: center;
+      background-color: #f0f4f7;
+    }
+
+    #pagination button {
+      background-color: #007bff;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin: 0 10px;
+      transition: background-color 0.3s;
+    }
+
+    #pagination button:hover {
+      background-color: #0056b3;
+    }
+
+    @media (max-width: 768px) {
+      form input,
+      form select {
+        width: 100%;
+      }
+
+      .filter-container {
+        flex-direction: column;
+        gap: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Task Management System</h1>
+    <form id="task-form">
+      <input type="text" id="title" placeholder="Title" required>
+      <input type="text" id="description" placeholder="Description" required>
+      <input type="datetime-local" id="dueDate" required>
+      <select id="status">
+        <option value="Open">Open</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Closed">Closed</option>
+      </select>
+      <button type="submit">Add Task</button>
+    </form>
+
+    <div class="filter-container">
+      <div>
+        <label for="filter-status">Filter by Status:</label>
+        <select id="filter-status">
+          <option value="All">All</option>
+          <option value="Open">Open</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Closed">Closed</option>
+        </select>
+      </div>
+      <div>
+        <label for="filter-priority">Filter by Priority:</label>
+        <select id="filter-priority">
+          <option value="All">All</option>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="task-list" id="task-list"></div>
+
+    <div id="pagination">
+      <button id="prev">Previous</button>
+      <button id="next">Next</button>
+    </div>
+  </div>
+
+  <script>
+    let tasks = [];
+    let currentPage = 1;
+    const tasksPerPage = 5;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadTasks();
+
+      document.getElementById("task-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const title = document.getElementById("title").value;
+        const description = document.getElementById("description").value;
+        const dueDate = document.getElementById("dueDate").value;
+        const status = document.getElementById("status").value;
+        createTask({ title, description, dueDate, status });
+      });
+
+      document.getElementById("filter-status").addEventListener("change", applyFilters);
+      document.getElementById("filter-priority").addEventListener("change", applyFilters);
+      document.getElementById("prev").addEventListener("click", () => changePage(-1));
+      document.getElementById("next").addEventListener("click", () => changePage(1));
+    });
+
+    const loadTasks = () => {
+      fetch(`http://localhost:3000/tickets?_page=${currentPage}&_limit=${tasksPerPage}`)
+        .then(res => res.json())
+        .then(data => {
+          tasks = data;
+          displayTasks();
+        })
+        .catch(err => console.error("Error loading tasks", err));
+    };
+
+    const createTask = (task) => {
+      fetch("http://localhost:3000/tickets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(task)
+      }).then(() => loadTasks());
+    };
+
+    const deleteTask = (id) => {
+      fetch(`http://localhost:3000/tickets/${id}`, { method: "DELETE" })
+        .then(() => loadTasks());
+    };
+
+    const displayTasks = () => {
+      const taskList = document.getElementById("task-list");
+      taskList.innerHTML = "";
+      tasks.forEach(task => {
+        const priority = getTaskPriority(task.dueDate);
+        const taskItem = document.createElement("div");
+        taskItem.className = `task-item ${priority.toLowerCase()}`;
+        taskItem.innerHTML = `
+          <h3>${task.title} (Priority: ${priority})</h3>
+          <p>${task.description}</p>
+          <p>Status: ${task.status}</p>
+          <p>Due: ${new Date(task.dueDate).toLocaleString()}</p>
+          <button onclick="deleteTask(${task.id})">Delete</button>
+        `;
+        taskList.appendChild(taskItem);
+      });
+    };
+
+    const getTaskPriority = (dueDate) => {
+      const now = new Date();
+      const due = new Date(dueDate);
+      const diffInMinutes = (due - now) / (1000 * 60);
+      if (diffInMinutes <= 2) return "High";
+      if (diffInMinutes <= 3) return "Medium";
+      return "Low";
+    };
+
+    const applyFilters = () => {
+      const statusFilter = document.getElementById("filter-status").value;
+      const priorityFilter = document.getElementById("filter-priority").value;
+      fetch(`http://localhost:3000/tickets?_page=${currentPage}&_limit=${tasksPerPage}`)
+        .then(res => res.json())
+        .then(data => {
+          tasks = data.filter(task => {
+            const priority = getTaskPriority(task.dueDate);
+            return (statusFilter === "All" || task.status === statusFilter) &&
+              (priorityFilter === "All" || priority === priorityFilter);
+          });
+          displayTasks();
+        });
+    };
+
+    const changePage = (offset) => {
+      currentPage += offset;
+      loadTasks();
+    };
+  </script>
+</body>
+</html>
